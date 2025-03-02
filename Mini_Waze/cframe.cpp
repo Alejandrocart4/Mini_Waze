@@ -31,9 +31,10 @@ cframe::cframe(QWidget *parent)
 
     ui->graphicsView->setSceneRect(mapa.rect());
 
-    dibujarRutas();
+    //dibujarRutas();
+    Ciudades::inicializarCiudades();
     agregarCiudades();
-    iniciarSimulacion();
+    //iniciarSimulacion();
 }
 
 cframe::~cframe()
@@ -43,15 +44,27 @@ cframe::~cframe()
 
 
 void cframe::agregarCiudades() {
-    QVector<Ciudad> ciudades = Ciudades::obtenerCiudades();
+    agregarCiudadesRecursivo(Ciudades::obtenerRaiz());
+}
 
-    for (const auto& ciudad : ciudades) {
-        QGraphicsEllipseItem *city = scene->addEllipse(ciudad.posicion.x(), ciudad.posicion.y(),
-                                                       10, 10, QPen(Qt::black), QBrush(Qt::blue));
-        city->setToolTip(ciudad.nombre);
-        city->setZValue(10);
+void cframe::agregarCiudadesRecursivo(NodoAVL* nodo) {
+    if (!nodo) return;
 
+    QGraphicsEllipseItem *city = scene->addEllipse(nodo->posicion.x(), nodo->posicion.y(),
+                                                   10, 10, QPen(Qt::black), QBrush(Qt::blue));
+    if (nodo->nombre == "Macuelizo") {
+        QGraphicsTextItem *label = scene->addText(nodo->nombre, QFont("Arial", 10, QFont::Bold));
+        label->setDefaultTextColor(Qt::black);
+        label->setPos(nodo->posicion.x() - 50, nodo->posicion.y() - 20);
+        label->setZValue(20);
     }
+
+    city->setToolTip(nodo->nombre);
+    city->setZValue(10);
+
+    // Recursivamente agregar las ciudades hijas
+    agregarCiudadesRecursivo(nodo->izquierda);
+    agregarCiudadesRecursivo(nodo->derecha);
 }
 
 void cframe::dibujarRutas() {
@@ -69,11 +82,11 @@ void cframe::dibujarRutas() {
         scene->addPath(path, QPen(Qt::red, 3, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
         qDebug() << "Ruta dibujada:" << ruta.nombre;
     }
+
 }
 
-
-const int OFFSET_X = -15;//-14
-const int OFFSET_Y = -14;
+const int OFFSET_X = -9;//6
+const int OFFSET_Y = -11;//3
 
 void cframe::mousePressEvent(QMouseEvent *event) {
     QPointF scenePos = ui->graphicsView->mapToScene(event->pos());
@@ -88,7 +101,7 @@ void cframe::iniciarSimulacion() {
     if (rutas.isEmpty()) return;
 
     // Tomar la primera ruta (puedes modificar para elegir otra)
-    QVector<QPointF> ruta = rutas[0].puntos;
+    QVector<QPointF> ruta = rutas[7].puntos;
 
     // Cargar la imagen del carro
     QPixmap carroPixmap(":/Imagenes/carro1.png");

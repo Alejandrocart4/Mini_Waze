@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QGraphicsScene>
+#include "arbol_avl.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class cframe; }
@@ -27,6 +28,7 @@ private:
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
+    void agregarCiudadesRecursivo(NodoAVL* nodo);
 
 };
 

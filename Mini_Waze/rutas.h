@@ -3,9 +3,12 @@
 
 #include <QVector>
 #include <QPointF>
+#include "ciudades.h"
 
 struct Ruta {
     QString nombre;
+    NodoAVL* inicio;
+    NodoAVL* fin;
     QVector<QPointF> puntos;
 };
 
