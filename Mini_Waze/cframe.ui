@@ -46,7 +46,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -138,7 +138,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>310</y>
+        <y>360</y>
         <width>181</width>
         <height>20</height>
        </rect>
@@ -151,7 +151,7 @@
       <property name="geometry">
        <rect>
         <x>120</x>
-        <y>380</y>
+        <y>450</y>
         <width>91</width>
         <height>29</height>
        </rect>
@@ -164,7 +164,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>350</y>
+        <y>400</y>
         <width>181</width>
         <height>20</height>
        </rect>
@@ -177,7 +177,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>330</y>
+        <y>380</y>
         <width>181</width>
         <height>20</height>
        </rect>
@@ -190,7 +190,7 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>190</y>
+        <y>170</y>
         <width>341</width>
         <height>61</height>
        </rect>
@@ -200,13 +200,51 @@
       <property name="geometry">
        <rect>
         <x>110</x>
-        <y>270</y>
+        <y>310</y>
         <width>111</width>
         <height>29</height>
        </rect>
       </property>
       <property name="text">
        <string>Seleccionar Ruta</string>
+      </property>
+     </widget>
+     <widget class="QListWidget" name="Lw_ParadasFijas">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>240</y>
+        <width>341</width>
+        <height>61</height>
+       </rect>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab_2">
+     <attribute name="title">
+      <string>Historial</string>
+     </attribute>
+     <widget class="QListWidget" name="listHistorial">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>90</y>
+        <width>341</width>
+        <height>211</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btn_limpiarHistorial">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>350</y>
+        <width>83</width>
+        <height>29</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Limpiar</string>
       </property>
      </widget>
     </widget>

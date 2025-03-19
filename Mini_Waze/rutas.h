@@ -11,6 +11,9 @@
 #include <QListWidget>
 #include <QLabel>
 
+extern QMap<QString, QPair<int, int>> pesos;
+void inicializarPesos();
+
 struct Ruta {
     QString nombre;
     NodoAVL* inicio;
@@ -18,10 +21,14 @@ struct Ruta {
     QVector<QPointF> puntos;
     double distancia;
     double tiempo;
+
 };
 
 class Rutas {
 public:
+    QMap<QString, QList<QString>> paradasFijas; // Estructura para paradas fijas
+    void inicializarParadasFijas(); // Método para definir paradas fijas
+    QList<QString> obtenerParadasFijas(const QString& origen, const QString& destino);
     Rutas(QGraphicsScene* scene);
     static QVector<Ruta> obtenerRutas();
     static QVector<QPointF> calcularRutaOptima(const QString& origen, const QString& destino, bool porTiempo);

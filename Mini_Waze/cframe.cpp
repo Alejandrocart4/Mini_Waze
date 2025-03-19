@@ -1,133 +1,3 @@
-/*#include "cframe.h"
-#include "ui_cframe.h"
-#include "rutas.h"
-#include "ciudades.h"
-#include <QGraphicsPixmapItem>
-#include <QDebug>
-#include <QMouseEvent>
-#include <QPropertyAnimation>
-#include <QSequentialAnimationGroup>
-
-
-cframe::cframe(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::cframe)
-{
-    ui->setupUi(this);
-    setWindowState(Qt::WindowMaximized);
-
-    scene = new QGraphicsScene(this);
-    ui->graphicsView->setScene(scene);
-
-    QPixmap mapa(":/Imagenes/Mapa de Honduras.jpg");
-    QGraphicsPixmapItem *fondo = scene->addPixmap(mapa);
-    //fondo->setPos(0,0);
-    fondo->setZValue(-1);
-
-    ui->graphicsView->setSceneRect(mapa.rect());
-
-    dibujarRutas();
-    Ciudades::inicializarCiudades();
-    agregarCiudades();
-    iniciarSimulacion();
-}
-
-cframe::~cframe()
-{
-    delete ui;
-}
-
-
-void cframe::agregarCiudades() {
-    agregarCiudadesRecursivo(Ciudades::obtenerRaiz());
-}
-
-void cframe::agregarCiudadesRecursivo(NodoAVL* nodo) {
-    if (!nodo) return;
-
-    QGraphicsEllipseItem *city = scene->addEllipse(nodo->posicion.x(), nodo->posicion.y(),
-                                                   10, 10, QPen(Qt::black), QBrush(Qt::blue));
-    if (nodo->nombre == "Macuelizo") {
-        QGraphicsTextItem *label = scene->addText(nodo->nombre, QFont("Arial", 10, QFont::Bold));
-        label->setDefaultTextColor(Qt::black);
-        label->setPos(nodo->posicion.x() - 50, nodo->posicion.y() - 20);
-        label->setZValue(20);
-    }
-
-    city->setToolTip(nodo->nombre);
-    city->setZValue(10);
-
-    // Recursivamente agregar las ciudades hijas
-    agregarCiudadesRecursivo(nodo->izquierda);
-    agregarCiudadesRecursivo(nodo->derecha);
-}
-
-void cframe::dibujarRutas() {
-    QVector<Ruta> rutas = Rutas::obtenerRutas();
-
-    for (const Ruta &ruta : rutas) {
-        if (ruta.puntos.isEmpty()) continue;
-
-        QPainterPath path;
-        path.moveTo(ruta.puntos.first());
-        for (const QPointF &punto : ruta.puntos) {
-            path.lineTo(punto);
-        }
-
-        scene->addPath(path, QPen(Qt::red, 3, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-        qDebug() << "Ruta dibujada:" << ruta.nombre;
-    }
-
-}
-
-const int OFFSET_X = -9;//6
-const int OFFSET_Y = -11;//3
-
-void cframe::mousePressEvent(QMouseEvent *event) {
-    QPointF scenePos = ui->graphicsView->mapToScene(event->pos());
-    QPointF correctedPos(scenePos.x() + OFFSET_X, scenePos.y() + OFFSET_Y);
-
-    //qDebug() << "Coordenada original: (" << scenePos.x() << "," << scenePos.y() << ")";
-    qDebug() << "Coordenada corregida: (" << correctedPos.x() << "," << correctedPos.y() << ")";
-}
-
-void cframe::iniciarSimulacion() {
-    QVector<Ruta> rutas = Rutas::obtenerRutas();
-    if (rutas.isEmpty()) return;
-
-    QVector<QPointF> ruta = rutas[0].puntos;
-
-    QPixmap carroPixmap(":/Imagenes/carro1.png");
-    QGraphicsPixmapItem *carro = scene->addPixmap(carroPixmap);
-    carro->setScale(0.20);
-    carro->setZValue(20);
-
-    carro->setPos(ruta[0]);
-
-    QSequentialAnimationGroup *animacionRuta = new QSequentialAnimationGroup(this);
-
-    for (int i = 1; i < ruta.size(); ++i) {
-        QVariantAnimation *animacion = new QVariantAnimation(this);
-        animacion->setDuration(500);
-        animacion->setStartValue(ruta[i - 1]);
-        animacion->setEndValue(ruta[i]);
-
-        connect(animacion, &QVariantAnimation::valueChanged, this, [carro](const QVariant &value) {
-            QPointF pos = value.toPointF();
-            QSize carroSize = carro->pixmap().size();
-
-            pos.setX(pos.x() - (carroSize.width() * 0.090));
-            pos.setY(pos.y() - (carroSize.height() * 0.080));
-
-            carro->setPos(pos);
-        });
-
-        animacionRuta->addAnimation(animacion);
-    }
-
-    animacionRuta->start();
-}*/
-
 #include "cframe.h"
 #include "ui_cframe.h"
 #include "rutas.h"
@@ -137,6 +7,15 @@ void cframe::iniciarSimulacion() {
 #include <QPropertyAnimation>
 #include <QSequentialAnimationGroup>
 #include <QMessageBox>
+#include <QTime>
+#include <QTimer>
+#include <QMap>
+#include <QString>
+#include "manejadospesos.h"
+#include "arbol_rn.h"
+#include "historialrutas.h"
+
+HistorialRutas historial;
 
 cframe::cframe(QWidget *parent)
     : QMainWindow(parent)
@@ -171,11 +50,16 @@ cframe::cframe(QWidget *parent)
         if (nodo->derecha) ciudadesPendientes.append(nodo->derecha);
     }
 
+    rutas = new Rutas(scene);
+
     ui->comboBox_transporte->clear();
     ui->comboBox_transporte->addItems({"Privado", "Público"});
-
     connect(ui->comboBox_Origen, &QComboBox::currentTextChanged, this, &cframe::actualizarPuntoOrigen);
     connect(ui->comboBox_Destino, &QComboBox::currentTextChanged, this, &cframe::actualizarPuntoDestino);
+
+    //connect(ui->btn_limpiarHistorial, &QPushButton::clicked, this, &cframe::on_btn_limpiarHistorial_clicked);
+
+    mostrarHistorial();
 }
 
 cframe::~cframe() {
@@ -213,6 +97,8 @@ void cframe::actualizarPuntoDestino(const QString& ciudad) {
 }
 
 void cframe::on_btnRutas_clicked() {
+    ui->List_rutas->clear();
+    indiceRutas.clear();
     QString origen = ui->comboBox_Origen->currentText();
     QString destino = ui->comboBox_Destino->currentText();
 
@@ -255,29 +141,47 @@ void cframe::on_btnRutas_clicked() {
 
     // Obtener todas las rutas disponibles
     QVector<Ruta> rutasDisponibles = Rutas::obtenerRutas();
-    qDebug() << "Total de rutas obtenidas: " << rutasDisponibles.size();
-
-    ui->List_rutas->clear();
-    indiceRutas.clear(); // Limpiar el vector antes de agregar nuevas rutas
-
-    bool rutaEncontrada = false;
+    if (rutasDisponibles.isEmpty()) {
+        QMessageBox::warning(this, "Error", "No se encontraron rutas disponibles.");
+        return;
+    }
 
     // Agregar rutas válidas a la lista y dibujarlas en el mapa
-    for (int i = 0; i < rutasDisponibles.size(); ++i) {
-        if (rutasDisponibles[i].inicio && rutasDisponibles[i].fin) {
-            if (rutasDisponibles[i].inicio->nombre == origen && rutasDisponibles[i].fin->nombre == destino) {
-                qDebug() << "Agregando ruta: " << rutasDisponibles[i].nombre << " con índice real: " << i;
-                ui->List_rutas->addItem(rutasDisponibles[i].nombre);
-                indiceRutas.append(i);
+    bool rutaEncontrada = false;
+    QSet<QString> rutasMostradas; // Almacenar rutas ya agregadas para evitar duplicados
 
-                // Dibujar la ruta en el mapa
-                Rutas rutas(scene);
-                rutas.dibujarRuta(origen, destino, scene, ui->List_rutas, Qt::red);
-                rutaEncontrada = true;
+    for (int i = 0; i < rutasDisponibles.size(); ++i) {
+        Ruta ruta = rutasDisponibles[i];
+
+        if (!ruta.inicio || !ruta.fin) continue;
+
+        // Verificar si la ruta coincide exactamente con el origen y destino seleccionados
+        if (ruta.inicio->nombre == origen && ruta.fin->nombre == destino) {
+            QString nombreRuta = origen + " - " + destino;
+            ui->List_rutas->addItem(nombreRuta);  // Agregar la ruta al listado
+            indiceRutas.append(i);
+
+            // Dibujar la ruta en el mapa con los puntos correctos
+            QPen pen(Qt::red);
+            pen.setWidth(3);
+            QPainterPath path;
+            path.moveTo(ruta.puntos[0]);
+            for (const QPointF& punto : ruta.puntos) {
+                path.lineTo(punto);
             }
-        } else {
-            qDebug() << "ERROR: Ruta inválida con índice: " << i;
+            scene->addPath(path, pen);
+
+            rutaEncontrada = true;
+            break;  // No seguir buscando después de encontrar la ruta
         }
+    }
+
+    ui->Lw_ParadasFijas->clear();
+    QList<QString> paradasFijas = rutas->obtenerParadasFijas(origen, destino);
+    if (!paradasFijas.isEmpty()) {
+        ui->Lw_ParadasFijas->addItems(paradasFijas);
+    } else {
+        ui->Lw_ParadasFijas->addItem("No hay paradas fijas.");
     }
 
     if (!rutaEncontrada) {
@@ -290,8 +194,19 @@ void cframe::mousePressEvent(QMouseEvent *event) {
     qDebug() << "Coordenada clickeada:" << scenePos;
 }
 
+void cframe::mostrarHistorial() {
+    ui->listHistorial->clear();
+    QList<QString> rutas = historial.obtenerHistorial();
+    for (const QString& ruta : rutas) {
+        ui->listHistorial->addItem(ruta);
+    }
+}
+
 void cframe::on_btn_seleccionRuta_clicked()
 {
+    QString origen = ui->comboBox_Origen->currentText();
+    QString destino = ui->comboBox_Destino->currentText();
+
     int index = ui->List_rutas->currentRow();
     QString tipoTransporte = ui->comboBox_transporte->currentText();
 
@@ -314,6 +229,53 @@ void cframe::on_btn_seleccionRuta_clicked()
         return;
     }
 
+    ManejadorPesos manejador;
+
+    // Obtener los pesos usando el manejador
+    QPair<int, int> datos = manejador.obtenerPesos(origen, destino);
+    int distancia = datos.first;
+    int duracion = datos.second;
+
+     QString ruta = origen + " - " + destino;
+
+    // Verificar si se encontró una ruta válida
+    if (distancia > 0 && duracion > 0) {
+        int horas = duracion / 60;
+        int minutos = duracion % 60;
+
+        // Formato de distancia
+        QString distanciaTexto = QString("Distancia: %1 km").arg(distancia);
+
+        // Formato de duración
+        QString tiempoTexto;
+        if (horas > 0) {
+            tiempoTexto = QString("Duración: %1 h %2 min").arg(horas).arg(minutos);
+        } else {
+            tiempoTexto = QString("Duración: %1 min").arg(minutos);
+        }
+
+        // Calcular la hora de llegada
+        QTime horaActual = QTime::currentTime();
+        QTime horaLlegada = horaActual.addSecs(duracion * 60);
+        QString horaLlegadaTexto = QString("Hora de llegada estimada: %1").arg(horaLlegada.toString("hh:mm"));
+
+        // Actualizar los QLabel con la información formateada
+        ui->Lb_KmRestante->setText(distanciaTexto);
+        ui->Lb_TiempoRestante->setText(tiempoTexto);
+        ui->Lb_HoraLlegada->setText(horaLlegadaTexto);
+    } else {
+        ui->Lb_KmRestante->setText("Ruta no encontrada");
+        ui->Lb_TiempoRestante->setText("");
+        ui->Lb_HoraLlegada->setText("");
+    }
+
+    historial.agregarRuta(ruta);
+    mostrarHistorial();
+
+    qDebug() << "Ruta seleccionada: " << rutaSeleccionada.nombre;
+}
+
+void cframe::limpiarUI() {
     if (carro) {
         if (carro->scene() == scene) {
             scene->removeItem(carro);
@@ -322,21 +284,41 @@ void cframe::on_btn_seleccionRuta_clicked()
         carro = nullptr;
     }
 
-    ui->Lb_KmRestante->setText(QString("Distancia: %1 km").arg(rutaSeleccionada.distancia));
-    ui->Lb_TiempoRestante->setText(QString("Tiempo: %1 min").arg(rutaSeleccionada.tiempo));
-    ui->Lb_HoraLlegada->setText("Hora de llegada estimada: 18:00");
+    scene->clear();
+    QPixmap mapa(":/Imagenes/Mapa de Honduras.jpg");
+    scene->addPixmap(mapa)->setZValue(-1);
 
-
-    qDebug() << "Ruta seleccionada: " << rutaSeleccionada.nombre;
+    // Resetear los elementos de la UI
+    ui->comboBox_Origen->setCurrentIndex(0);
+    ui->comboBox_Destino->setCurrentIndex(0);
+    ui->comboBox_transporte->setCurrentIndex(0);
+    ui->List_rutas->clear();
+    ui->Lw_ParadasFijas->clear();
+    ui->Lb_KmRestante->clear();
+    ui->Lb_TiempoRestante->clear();
+    ui->Lb_HoraLlegada->clear();
 }
 
 void cframe::iniciarSimulacion(const QVector<QPointF>& ruta, int index, const QString& tipoTransporte) {
-    if (ruta.isEmpty()) {
+    /*if (ruta.isEmpty()) {
         QMessageBox::warning(this, "Error", "No hay ruta disponible para la simulación.");
         return;
     }
 
-    // Eliminar el vehículo anterior si existe
+    QString origen = ui->comboBox_Origen->currentText();
+    QString destino = ui->comboBox_Destino->currentText();
+
+    // Obtener las paradas fijas de la ruta seleccionada
+    QList<QString> paradasFijas = rutas->obtenerParadasFijas(origen, destino);
+
+    QList<QAbstractAnimation*> animaciones = findChildren<QAbstractAnimation*>();
+    for (QAbstractAnimation* anim : animaciones) {
+        qDebug() << "Eliminando animación previa";
+        anim->stop();
+        anim->deleteLater();
+    }
+
+    // Eliminar el vehículo anterior de manera segura
     if (carro) {
         if (carro->scene() == scene) {
             scene->removeItem(carro);
@@ -347,24 +329,29 @@ void cframe::iniciarSimulacion(const QVector<QPointF>& ruta, int index, const QS
 
     // Cargar la imagen del vehículo según el tipo de transporte
     QString imagenCarro = (tipoTransporte == "Público") ? ":/Imagenes/bus.png" : ":/Imagenes/carro1.png";
-
     QPixmap carroPixmap(imagenCarro);
     if (carroPixmap.isNull()) {
         QMessageBox::critical(this, "Error", "No se pudo cargar la imagen del vehículo.");
         return;
     }
 
-    // Agregar el vehículo a la escena y colocarlo en la posición inicial de la ruta seleccionada
     carro = scene->addPixmap(carroPixmap);
     carro->setScale((tipoTransporte == "Público") ? 0.15 : 0.20);
     carro->setZValue(20);
-
-    // Posicionar el vehículo en el punto de inicio de la ruta seleccionada
     carro->setPos(ruta.first());
-    carro->setPos(ruta[0]);
+
+    QPointF inicioPos = ruta.first();
+    carro->setPos(inicioPos);
 
     // Crear la animación de la ruta
     QSequentialAnimationGroup *animacionRuta = new QSequentialAnimationGroup(this);
+    qDebug() << "Creando nuevo grupo de animación:" << animacionRuta;
+
+    connect(animacionRuta, &QSequentialAnimationGroup::finished, this, [this, animacionRuta]() {
+        QMessageBox::information(this, "Simulación", "Ha llegado a su destino.");
+        limpiarUI();
+        animacionRuta->deleteLater();
+    });
 
     for (int i = index + 1; i < ruta.size(); ++i) {
         QVariantAnimation *animacion = new QVariantAnimation(this);
@@ -372,9 +359,12 @@ void cframe::iniciarSimulacion(const QVector<QPointF>& ruta, int index, const QS
         animacion->setStartValue(ruta[i - 1]);
         animacion->setEndValue(ruta[i]);
 
+         animacion->setEasingCurve(QEasingCurve::Linear);
+
+       // qDebug() << "Creando animación para paso:" << i << "Animación:" << animacion;
 
         connect(animacion, &QVariantAnimation::valueChanged, this, [this](const QVariant &value) {
-            if (!this->carro) return;
+             if (carro) {
 
             QPointF pos = value.toPointF();
             QSize carroSize = this->carro->pixmap().size();
@@ -384,12 +374,115 @@ void cframe::iniciarSimulacion(const QVector<QPointF>& ruta, int index, const QS
             pos.setY(pos.y() - (carroSize.height() * 0.080));
 
             this->carro->setPos(pos);
+             }
+        });
+
+        animacionRuta->addAnimation(animacion);
+        connect(animacion, &QVariantAnimation::finished, animacion, &QVariantAnimation::deleteLater);
+        animacionRuta->addAnimation(animacion);
+
+        // 🚏 Verificar si el punto actual es una parada fija
+        for (const auto& parada : paradasFijas) {
+            NodoAVL* nodoParada = Ciudades::buscarCiudad(parada);
+            if (nodoParada && ruta[i] == nodoParada->posicion) {
+                // Detener la animación por 1 segundo
+                QTimer::singleShot(1000, this, [animacionRuta]() {
+                    animacionRuta->start();
+                });
+                return; // Evita que la animación continúe sin pausa
+            }
+        }
+    }
+
+     animacionRuta->start(QAbstractAnimation::DeleteWhenStopped);*/
+    if (ruta.isEmpty()) {
+        QMessageBox::warning(this, "Error", "No hay ruta disponible para la simulación.");
+        return;
+    }
+
+    QString origen = ui->comboBox_Origen->currentText();
+    QString destino = ui->comboBox_Destino->currentText();
+
+    // 🔥 Eliminar cualquier animación previa (si existe)
+    QList<QAbstractAnimation*> animaciones = findChildren<QAbstractAnimation*>();
+    for (QAbstractAnimation* anim : animaciones) {
+        qDebug() << "Eliminando animación previa";
+        anim->stop();
+        anim->deleteLater();
+    }
+
+    // 🔥 Eliminar el vehículo anterior de manera segura
+    if (carro) {
+        if (carro->scene() == scene) {
+            scene->removeItem(carro);
+        }
+        delete carro;
+        carro = nullptr;
+    }
+
+    // 🔥 Cargar la imagen del vehículo según el tipo de transporte
+    QString imagenCarro = (tipoTransporte == "Público") ? ":/Imagenes/bus.png" : ":/Imagenes/carro1.png";
+    QPixmap carroPixmap(imagenCarro);
+    if (carroPixmap.isNull()) {
+        QMessageBox::critical(this, "Error", "No se pudo cargar la imagen del vehículo.");
+        return;
+    }
+
+    // 🔥 Crear el objeto del carro desde cero
+    carro = scene->addPixmap(carroPixmap);
+    carro->setScale((tipoTransporte == "Público") ? 0.15 : 0.20);
+    carro->setZValue(20);
+
+    // 🔥 Reiniciar la posición del carro al origen de la ruta
+    QPointF inicioPos = ruta.first();
+    QSize carroSize = carro->pixmap().size();
+    inicioPos.setX(inicioPos.x() - (carroSize.width() * 0.090));
+    inicioPos.setY(inicioPos.y() - (carroSize.height() * 0.080));
+    carro->setPos(inicioPos);
+
+    // 🔥 Crear un grupo de animación nuevo siempre
+    QSequentialAnimationGroup *animacionRuta = new QSequentialAnimationGroup(this);
+    qDebug() << "Creando nuevo grupo de animación:" << animacionRuta;
+
+    // 🔥 Conectar la finalización de la animación
+    connect(animacionRuta, &QSequentialAnimationGroup::finished, this, [this, animacionRuta]() {
+        QMessageBox::information(this, "Simulación", "Ha llegado a su destino.");
+        limpiarUI();
+        animacionRuta->clear();    // Limpiar el grupo de animación
+        animacionRuta->deleteLater(); // Eliminar el grupo de animación
+    });
+
+    // 🔥 Crear las animaciones de la ruta
+    for (int i = index + 1; i < ruta.size(); ++i) {
+        QVariantAnimation *animacion = new QVariantAnimation(this);
+
+        // 🔥 Duración ajustada para garantizar que no sea instantánea
+        animacion->setDuration(500);
+        animacion->setStartValue(ruta[i - 1]);
+        animacion->setEndValue(ruta[i]);
+
+        // 🔥 Asegurar interpolación lineal para movimiento suave
+        animacion->setEasingCurve(QEasingCurve::Linear);
+
+        // 🔥 Conectar el movimiento del carro
+        connect(animacion, &QVariantAnimation::valueChanged, this, [this](const QVariant &value) {
+            if (carro) {
+                QPointF pos = value.toPointF();
+                QSize carroSize = carro->pixmap().size();
+                pos.setX(pos.x() - (carroSize.width() * 0.090));
+                pos.setY(pos.y() - (carroSize.height() * 0.080));
+                carro->setPos(pos);
+            }
         });
 
         animacionRuta->addAnimation(animacion);
     }
 
-    animacionRuta->start();
+    // 🔥 Configuración de grupo de animación nuevo y seguro
+    animacionRuta->setLoopCount(1);
+    animacionRuta->start(QAbstractAnimation::DeleteWhenStopped);
+
+    qDebug() << "Iniciando animación:" << animacionRuta;
 }
 
 void cframe::on_btnIniciarSimulacion_clicked()
@@ -419,16 +512,19 @@ void cframe::on_btnIniciarSimulacion_clicked()
         QMessageBox::critical(this, "Error", "No se encontró una ruta válida para animar.");
         return;
     }
-    // Actualizar labels con la información de la ruta seleccionada
-   /*ui->Lb_KmRestante->setText(QString::number(rutaSeleccionada.distancia) + " km");
-    ui->Lb_TiempoRestante->setText(QString::number(rutaSeleccionada.tiempo) + " min");
 
-    QTime horaActual = QTime::currentTime();
-    QTime horaLlegada = horaActual.addSecs(rutaSeleccionada.tiempo * 60);
-    ui->Lb_HoraLlegada->setText(horaLlegada.toString("hh:mm"));*/
+    qDebug() << "Ruta seleccionada (antes de iniciar):";
+    for (const auto& punto : rutaSeleccionada.puntos) {
+        qDebug() << "Punto:" << punto;
+    }
 
     // Llamar a iniciarSimulacion con la ruta seleccionada
      iniciarSimulacion(rutaSeleccionada.puntos, 0, ui->comboBox_transporte->currentText());
 }
 
+void cframe::on_btn_limpiarHistorial_clicked()
+{
+    historial.limpiarHistorial();
+    mostrarHistorial();
+}
 

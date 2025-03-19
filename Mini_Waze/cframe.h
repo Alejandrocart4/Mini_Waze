@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include <QGraphicsScene>
 #include "arbol_avl.h"
+#include "rutas.h"
+#include "historialrutas.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class cframe; }
@@ -21,12 +23,17 @@ private:
     Ui::cframe *ui;
     QGraphicsScene *scene;
     QGraphicsPixmapItem *carro = nullptr;
+    Rutas * rutas;
+     HistorialRutas historial;
 
     void agregarCiudades();
     void agregarCiudadesRecursivo(NodoAVL* nodo, const QString& origen, const QString& destino);
    void iniciarSimulacion(const QVector<QPointF>& ruta, int index, const QString& tipoTransporte);
     void dibujarRutas();
     QVector<int> indiceRutas;
+    void limpiarUI()    ;
+
+    void mostrarHistorial();
 
 
 protected:
@@ -41,6 +48,7 @@ private slots:
     //void on_btnIniciarSimulacion_clicked();
     void on_btn_seleccionRuta_clicked();
     void on_btnIniciarSimulacion_clicked();
+    void on_btn_limpiarHistorial_clicked();
 };
 
 #endif // CFRAME_H

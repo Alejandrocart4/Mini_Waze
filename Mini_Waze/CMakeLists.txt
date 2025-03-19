@@ -27,6 +27,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         rutas.h rutas.cpp
         ciudades.h ciudades.cpp
         arbol_avl.h arbol_avl.cpp
+        manejadospesos.h manejadospesos.cpp
+        arbol_rn.h arbol_rn.cpp
+        historialrutas.h historialrutas.cpp
+
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET Mini_Waze APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
