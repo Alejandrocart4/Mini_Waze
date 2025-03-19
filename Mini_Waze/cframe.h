@@ -20,16 +20,27 @@ public:
 private:
     Ui::cframe *ui;
     QGraphicsScene *scene;
+    QGraphicsPixmapItem *carro = nullptr;
 
-    void addCity(const QString &name, int x, int y);
-    void  dibujarRutas();
     void agregarCiudades();
-    void iniciarSimulacion();
+    void agregarCiudadesRecursivo(NodoAVL* nodo, const QString& origen, const QString& destino);
+   void iniciarSimulacion(const QVector<QPointF>& ruta, int index, const QString& tipoTransporte);
+    void dibujarRutas();
+    QVector<int> indiceRutas;
+
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
-    void agregarCiudadesRecursivo(NodoAVL* nodo);
+    //void agregarCiudadesRecursivo(NodoAVL* nodo);
 
+private slots:
+    void actualizarPuntoOrigen(const QString& ciudad);
+    void actualizarPuntoDestino(const QString& ciudad);
+    //void on_comboBox_transporte_currentTextChanged(const QString& transporte);
+    void on_btnRutas_clicked();
+    //void on_btnIniciarSimulacion_clicked();
+    void on_btn_seleccionRuta_clicked();
+    void on_btnIniciarSimulacion_clicked();
 };
 
 #endif // CFRAME_H

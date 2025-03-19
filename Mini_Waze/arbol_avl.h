@@ -7,6 +7,7 @@
 struct NodoAVL {
     QString nombre;
     QPointF posicion;
+    QString alias;
     NodoAVL *izquierda;
     NodoAVL *derecha;
     int altura;

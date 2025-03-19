@@ -2,6 +2,6 @@
     <qresource prefix="/">
         <file>Imagenes/Mapa de Honduras.jpg</file>
         <file>Imagenes/carro1.png</file>
-        <file>Imagenes/carro2.png</file>
+        <file>Imagenes/bus.png</file>
     </qresource>
 </RCC>
